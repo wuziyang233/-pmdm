@@ -18,11 +18,12 @@ Official implementation of **PMDM**, a dual diffusion model enables 3D binding b
 <img src="img/traj.gif" alt="GIF" width="400">
 </div>
 
-1. [Dependencies](#dependencies)
+1. [Reporting Guide (汇报建议)](#reporting-guide-汇报建议)
+2. [Dependencies](#dependencies)
    1. [Conda environment](#conda-environment)
    2. [QuickVina 2](#quickvina-2)
    3. [Pre-trained models](#pre-trained-models)
-2. [Benchmarks](#benchmarks)
+3. [Benchmarks](#benchmarks)
    1. [CrossDocked Benchmark](#crossdocked)
    2. [Binding MOAD](#binding-moad)
 4. [Training](#training)
@@ -31,7 +32,54 @@ Official implementation of **PMDM**, a dual diffusion model enables 3D binding b
    2. [Sample molecules for a given pocket](#sample-molecules-for-a-given-pocket) 
    3. [Metrics](#metrics)
    4. [QuickVina2](#quickvina2)
-7. [Citation](#citation)
+6. [Citation](#citation)
+
+## Reporting Guide (汇报建议)
+
+> 请先明确你实际使用的配置文件（例如 `configs/crossdock_epoch.yml`），因为层数等超参均由配置读取。
+
+### 总体流程（建议画成一行流程图）
+输入（蛋白口袋 + 配体特征）→ 扰动/扩散加噪 → 模型预测噪声/score → 反向采样生成分子
+
+### 层数/卷积层/网络层（以 `configs/crossdock_epoch.yml` 为例）
+- 全局 EGNN 层数：`num_convs=3`（global encoder）
+- 局部 EGNN 层数：`num_convs_local=3`（local encoder）
+- 蛋白/配体编码器交互层：`protein_num_convs=2`（`SchNetEncoder_protein`）
+- 输出 MLP 头：每个 3 层（`grad_*_mlp`，input→hidden→hidden→output）
+- 跨注意力块：1 个 `BasicTransformerBlock` 用于配体-蛋白交互
+
+### β（beta schedule）
+扩散过程的噪声调度由配置中的 `beta_schedule/beta_start/beta_end/num_diffusion_timesteps` 决定，并在 `MDM_full_pocket_coor_shared` 中生成 `betas` 用于每一步噪声强度。
+
+### Embedding
+- 时间步嵌入：`get_num_embedding` 生成正弦嵌入，经两层 MLP 投影后加到上下文（`temb.dense` + `temb_proj`）。
+- 原子数嵌入（可选）：`atom_num_emb` 开关控制，流程与时间嵌入相同。
+
+### 为什么没有 decoder
+这是扩散/score 模型，目标是从带噪输入预测噪声/梯度并进行反向采样，不需要自编码器式的 decoder；整体更像“条件编码器 + 噪声预测器”。
+
+### g / l 可解释吗
+g=global，l=local。两套边分别建模：
+- local：短程/化学键邻域（`cutoff=3.0`）
+- global：更长程口袋相互作用（`g_cutoff=6.0`）
+两路输出在损失与采样时加权融合（例如 `pos_eq_global + pos_eq_local`，以及 `w_global_pos/w_local_pos`）。
+
+### 模块—作用—关键超参—代码位置
+| 模块 | 作用 | 关键超参（示例） | 代码位置 |
+| --- | --- | --- | --- |
+| 配置文件 | 统一管理层数与超参 | `num_convs/num_convs_local/protein_num_convs` | `configs/*.yml` |
+| β 调度 | 控制扩散噪声强度 | `beta_schedule/beta_start/beta_end/num_diffusion_timesteps` | `models/epsnet/diffusion.py` |
+| 时间/原子数嵌入 | 条件化扩散过程 | `time_emb/atom_num_emb` | `models/epsnet/diffusion.py` + `models/epsnet/MDM_pocket_coor_shared.py` |
+| Global EGNN | 全局口袋建模 | `num_convs/g_cutoff` | `models/epsnet/MDM_pocket_coor_shared.py` |
+| Local EGNN | 局部键/短程建模 | `num_convs_local/cutoff` | `models/epsnet/MDM_pocket_coor_shared.py` |
+| 蛋白/配体编码器 | 抽取口袋与配体表示 | `protein_num_convs/encoder_cutoff` | `models/epsnet/MDM_pocket_coor_shared.py` + `models/encoders/schnet.py` |
+| 跨注意力块 | 配体-蛋白交互 | `hidden_dim` | `models/epsnet/MDM_pocket_coor_shared.py` + `models/encoders/attention.py` |
+| 输出 MLP 头 | 预测噪声/score | `mlp_act/hidden_dim` | `models/epsnet/MDM_pocket_coor_shared.py` |
+
+### 汇报总结（3 点）
+- 双扩散分支（global/local）同时建模全局口袋与局部化学键相互作用。
+- 条件信息来自蛋白口袋，配体与口袋通过注意力交互融合。
+- 通过扩散反向采样生成 3D 分子构象与原子特征。
 
 ## Dependencies
 
@@ -191,7 +239,6 @@ python docking_2_single.py --receptor_file <prepapre_receptor4_outdir> --sdf_fil
 	journal = {bioRxiv}
 }
 ```
-
 
 
 
