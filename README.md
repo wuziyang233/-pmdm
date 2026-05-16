@@ -49,20 +49,20 @@ Official implementation of **PMDM**, a dual diffusion model enables 3D binding b
 - 跨注意力块：1 个 `BasicTransformerBlock` 用于配体-蛋白交互
 
 ### β（beta schedule）
-扩散过程的噪声调度由配置中的 `beta_schedule/beta_start/beta_end/num_diffusion_timesteps` 决定，并在 `MDM_full_pocket_coor_shared`（类名与源码一致）中生成 `betas` 用于每一步噪声强度。
+扩散过程的噪声调度由配置中的 `beta_schedule/beta_start/beta_end/num_diffusion_timesteps` 决定， 并在 `MDM_full_pocket_coor_shared`（类名与源码一致）中生成 `betas` 用于每一步噪声强度。
 
 ### Embedding
-- 时间步嵌入：函数名为 `get_num_embedding`（同时用于 timestep/num node），生成正弦嵌入，经两层 MLP 投影后融合到上下文表示（`temb.dense` + `temb_proj`）。
-- 原子数嵌入（可选）：`atom_num_emb` 开关控制，流程与时间嵌入相同。
+- 时间步嵌入： 函数名为 `get_num_embedding`（同时用于 timestep/num node）， 生成正弦嵌入，经两层 MLP 投影后融合到上下文表示（`temb.dense` + `temb_proj`）。
+- 原子数嵌入（可选）： `atom_num_emb` 开关控制，流程与时间嵌入相同。
 
 ### 架构说明：无需 decoder（解码器）
 这是扩散/score 模型，目标是从带噪输入预测噪声/梯度并进行反向采样，不需要自编码器式的 decoder（解码器）；整体更像“条件编码器 + 噪声预测器”。
 
 ### Global (g) 与 Local (l) 的含义
-g=global，l=local。代码里常见的 `g_`/`l_` 前缀或 `global`/`local` 变量（如 `w_global_pos`、`w_local_pos`）对应这两路。两套边分别建模：
+g=global， l=local。代码里常见的 `g_`/`l_` 前缀或 `global`/`local` 变量（如 `w_global_pos`、`w_local_pos`）对应这两路。两套边分别建模：
 - local：短程/化学键邻域（`cutoff=3.0`）
 - global：更长程口袋相互作用（`g_cutoff=6.0`）
-两路输出在损失与采样时加权融合（例如 `pos_eq_global + pos_eq_local`，以及 `w_global_pos/w_local_pos`）。
+两路输出在损失与采样时加权融合（例如 `pos_eq_global + pos_eq_local`， 以及 `w_global_pos/w_local_pos`）。
 
 ### 模块—作用—关键超参—代码位置
 | 模块 | 作用 | 关键超参（示例） | 代码位置 |
@@ -78,7 +78,7 @@ g=global，l=local。代码里常见的 `g_`/`l_` 前缀或 `global`/`local` 变
 
 ### 汇报总结（3 点）
 - 双扩散分支（global/local）同时建模全局口袋与局部化学键相互作用。
-- 条件信息来自蛋白口袋，配体与口袋通过注意力交互融合。
+- 条件信息来自蛋白口袋， 配体与口袋通过注意力交互融合。
 - 通过扩散反向采样生成三维分子构象与原子特征。
 
 ## Dependencies
