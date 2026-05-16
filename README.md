@@ -55,10 +55,10 @@ Official implementation of **PMDM**, a dual diffusion model enables 3D binding b
 - 时间步嵌入：`get_num_embedding` 生成正弦嵌入，经两层 MLP 投影后加到上下文（`temb.dense` + `temb_proj`）。
 - 原子数嵌入（可选）：`atom_num_emb` 开关控制，流程与时间嵌入相同。
 
-### 为什么没有 decoder
+### 架构说明：无需 Decoder
 这是扩散/score 模型，目标是从带噪输入预测噪声/梯度并进行反向采样，不需要自编码器式的 decoder；整体更像“条件编码器 + 噪声预测器”。
 
-### g / l 可解释吗
+### Global (g) 与 Local (l) 的含义
 g=global，l=local。两套边分别建模：
 - local：短程/化学键邻域（`cutoff=3.0`）
 - global：更长程口袋相互作用（`g_cutoff=6.0`）
@@ -239,5 +239,4 @@ python docking_2_single.py --receptor_file <prepapre_receptor4_outdir> --sdf_fil
 	journal = {bioRxiv}
 }
 ```
-
 
