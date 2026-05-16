@@ -52,7 +52,7 @@ Official implementation of **PMDM**, a dual diffusion model enables 3D binding b
 扩散过程的噪声调度由配置中的 `beta_schedule/beta_start/beta_end/num_diffusion_timesteps` 决定，并在 `MDM_full_pocket_coor_shared` 中生成 `betas` 用于每一步噪声强度。
 
 ### Embedding
-- 时间步嵌入：函数名为 `get_num_embedding`（同时用于 timestep/num node），生成正弦嵌入，经两层 MLP 投影后加到上下文（`temb.dense` + `temb_proj`）。
+- 时间步嵌入：函数名为 `get_num_embedding`（同时用于 timestep/num node），生成正弦嵌入，经两层 MLP 投影后融合到上下文表示（`temb.dense` + `temb_proj`）。
 - 原子数嵌入（可选）：`atom_num_emb` 开关控制，流程与时间嵌入相同。
 
 ### 架构说明：无需 decoder
@@ -79,7 +79,7 @@ g=global，l=local。代码里常见的 `g_`/`l_` 前缀或 `global`/`local` 变
 ### 汇报总结（3 点）
 - 双扩散分支（global/local）同时建模全局口袋与局部化学键相互作用。
 - 条件信息来自蛋白口袋，配体与口袋通过注意力交互融合。
-- 通过扩散反向采样生成 3D 分子构象与原子特征。
+- 通过扩散反向采样生成三维分子构象与原子特征。
 
 ## Dependencies
 
