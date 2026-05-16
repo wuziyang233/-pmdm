@@ -38,7 +38,7 @@ Official implementation of **PMDM**, a dual diffusion model enables 3D binding b
 
 > 请先明确你实际使用的配置文件（例如 `configs/crossdock_epoch.yml`），因为层数等超参均由配置读取。
 
-### 总体流程（建议画成一行流程图）
+### 总体流程（一行流程示意）
 输入（蛋白口袋 + 配体特征）→ 扰动/扩散加噪 → 模型预测噪声/score → 反向采样生成分子
 
 ### 层数/卷积层/网络层（以 `configs/crossdock_epoch.yml` 为例）
@@ -239,6 +239,5 @@ python docking_2_single.py --receptor_file <prepapre_receptor4_outdir> --sdf_fil
 	journal = {bioRxiv}
 }
 ```
-
 
 
